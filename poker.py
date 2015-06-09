@@ -19,13 +19,13 @@ class Card(object):
     def __lt__(self, other):
         return self.value < other.value
 
-class BaseDeck(object):
-    _shared_state = {}
-
-    def __new__(cls, *args, **kwargs):
-        obj = super().__new__(cls)
-        obj.__dict__ = cls._shared_state
-        return obj
+# class BaseDeck(object):
+#     _shared_state = {}
+#
+#     def __new__(cls, *args, **kwargs):
+#         obj = super().__new__(cls)
+#         obj.__dict__ = cls._shared_state
+#         return obj
 
 class Deck(object):
     def __new__(cls, *args, **kwargs):
@@ -52,6 +52,7 @@ class Deck(object):
 
 class Poker(object):
     def __init__(self):
+        self.hand = []
         self.deck = Deck()
 
     def give_cards(self, num):
@@ -59,8 +60,8 @@ class Poker(object):
         self.deck.deck = self.deck.deck[num:]
         return five_cards
 
-    def give_hand(self):
-        self.hand = self.give_cards(5)
+    def give_hand(self, cards_to_deal=5):
+        self.hand.extend(self.give_cards(cards_to_deal))
         self.values = [e.value for e in self.hand]
 
     def evaluate_hand(self):
@@ -91,7 +92,7 @@ class Poker(object):
                 if card.value == pair_value:
                     cards.append(card)
         if cards: return cards
-        return None
+        return False
 
     def has_two_pairs(self):
         if len(set(self.values)) != 3 or self.has_threes():
@@ -100,7 +101,7 @@ class Poker(object):
         for card in self.hand:
             if self.values.count(card.value) == 2:
                 cards.append(card)
-        return card
+        return cards
 
     def has_threes(self):
         if len(set(self.values)) != 3:
@@ -130,7 +131,7 @@ class Poker(object):
                 return False
 
     def has_flush(self):
-        return True if len(set([e.suit for e in self.hand])) == 1 else False
+        return self.hand if len(set([e.suit for e in self.hand])) == 1 else False
 
     def has_full_house(self):
         if len(set(self.values)) != 2:
@@ -154,15 +155,22 @@ class Poker(object):
         return cards
 
     def has_royal_flush(self):
-        return True if self.has_flush() and self.has_straight() else False
+        return self.hand if self.has_flush() and self.has_straight() else False
 
     def return_best(self):
-        combos = [self.has_royal_flush, self.has_four_of_kind, self.has_full_house, self.has_straight,
+        combos = [self.has_royal_flush, self.has_four_of_kind, self.has_full_house, self.has_flush, self.has_straight,
                   self.has_threes, self.has_two_pairs, self.has_pairs, self.set_high_card]
         for e in enumerate(combos):
             res = combos[e[0]]()
             if res:
                 return e[0], res
+
+    def draw_again(self):
+        hand_value, cards_to_keep  = self.return_best()
+        cards_to_discard = [card for card in self.hand if card not in cards_to_keep]
+        for card in cards_to_discard:
+            self.hand.remove(card)
+        self.give_hand(cards_to_deal=len(cards_to_discard))
 
 if __name__ == "__main__":
     import time
@@ -171,15 +179,16 @@ if __name__ == "__main__":
     for e in range(1000):
         p = Poker()
         p.give_hand()
+        p.draw_again()
         best, cards = p.return_best()
         if best not in results:
             results[best] = 1
         else:
             results[best] += 1
-        del p.deck
-    print(results)
-    print(time.time() - start)
-
+        del p.deck.deck
+    print("results of playing alone", results)
+    print("Time took", time.time() - start)
+    print()
     #let's start playing
     results = {}
     start = time.time()
@@ -199,7 +208,7 @@ if __name__ == "__main__":
             results[result] = 1
         else:
             results[result] += 1
-        del player2.deck
+        del player2.deck.deck
     print(results)
     print("End time for two player games ", time.time() - start)
 
