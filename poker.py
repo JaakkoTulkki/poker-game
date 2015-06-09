@@ -23,29 +23,30 @@ class BaseDeck(object):
     _shared_state = {}
 
     def __new__(cls, *args, **kwargs):
-        obj = super(BaseDeck, cls).__new__(cls)
+        obj = super().__new__(cls)
         obj.__dict__ = cls._shared_state
         return obj
 
 class Deck(BaseDeck):
-    pass
-
-class Poker(object):
-    def __init__(self):
-        if not hasattr(Deck, "deck"):
-            Deck.deck = Poker.create_deck()
-        self.shuffle()
-
     @staticmethod
     def create_deck():
+        if hasattr(Deck, "deck"):
+          return Deck.deck
         deck = []
         for suit in SUITS:
             for value in VALUES:
                 deck.append(Card("{} {}".format(suit, value)))
+        Deck.shuffle(deck)
         return deck
 
-    def shuffle(self):
-        random.shuffle(Deck.deck)
+    @staticmethod
+    def shuffle(deck):
+        random.shuffle(deck)
+        return deck
+
+class Poker(object):
+    def __init__(self):
+        Deck.deck = Deck.create_deck()
 
     def give_cards(self, num):
         five_cards = Deck.deck[:num]
@@ -176,7 +177,7 @@ if __name__ == "__main__":
     #let's start playing
     results = {}
     start = time.time()
-    for e in range(10000):
+    for e in range(1000):
         player1 = Poker()
         player1.give_hand()
         player1_best, player1_cards = player1.return_best()
