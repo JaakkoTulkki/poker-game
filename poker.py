@@ -27,30 +27,36 @@ class BaseDeck(object):
         obj.__dict__ = cls._shared_state
         return obj
 
-class Deck(BaseDeck):
-    @staticmethod
-    def create_deck():
-        if hasattr(Deck, "deck"):
-          return Deck.deck
+class Deck(object):
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, "instance"):
+            cls.instance = super().__new__(cls)
+        return cls.instance
+
+    def __init__(self):
+        self.deck = self.create_deck()
+
+    def create_deck(self):
+        if hasattr(self, "deck"):
+            return self.deck
         deck = []
         for suit in SUITS:
             for value in VALUES:
                 deck.append(Card("{} {}".format(suit, value)))
-        Deck.shuffle(deck)
+        self.shuffle(deck)
         return deck
 
-    @staticmethod
-    def shuffle(deck):
+    def shuffle(self, deck):
         random.shuffle(deck)
         return deck
 
 class Poker(object):
     def __init__(self):
-        Deck.deck = Deck.create_deck()
+        self.deck = Deck()
 
     def give_cards(self, num):
-        five_cards = Deck.deck[:num]
-        Deck.deck = Deck.deck[num:]
+        five_cards = self.deck.deck[:num]
+        self.deck.deck = self.deck.deck[num:]
         return five_cards
 
     def give_hand(self):
@@ -170,7 +176,7 @@ if __name__ == "__main__":
             results[best] = 1
         else:
             results[best] += 1
-        del Deck.deck
+        del p.deck
     print(results)
     print(time.time() - start)
 
@@ -186,14 +192,14 @@ if __name__ == "__main__":
         player2.give_hand()
         player2_best, player2_cards = player2.return_best()
 
-        assert (len(Deck.deck) == 42)
+        assert (len(player1.deck.deck) == 42)
 
         result = "Player 1 wins" if player1_best < player2_best else "Player 2 wins" if player2_best < player1_best else "It's a tie"
         if result not in results:
             results[result] = 1
         else:
             results[result] += 1
-        del Deck.deck
+        del player2.deck
     print(results)
     print("End time for two player games ", time.time() - start)
 
